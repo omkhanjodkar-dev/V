@@ -1,11 +1,14 @@
+// CURRENT
 // no scroll yet
 // offset bound implementation is pending
 // have only implemented y level customisation of position and size since i haven't done offset bounds yet
 // line bound has a bug: press enter n times then press backspace then press down arrow key then try to type anything, that gives segfault
 
+// OLD
 // the only problem in this entire program for functionality is the stupid DLL Edit class i made, i haven't figured out lines, add and remove yet properly with all its edge cases
 // future problems include mem leaks
 
+// GOOD THINGS I COULD DO
 // should have enums for magic numbers
 // memory management, smart pointers
 // using namespace std; !?
@@ -122,7 +125,7 @@ public:
 
 		// indexing fix
 		line--;
-		// offset--;
+		// offset--; why?
 		
 		if (head == NULL) {
 			Node* new_node = new Node(ch, NULL, NULL);
@@ -379,6 +382,7 @@ public:
 		// 3 = right
 		// 4 = left
 		// 5 = backspace
+		// 6 = esc
 		int inp = getch();
 		// if (char(inp) == 'q') {exit(EXIT_FAILURE);} // only debug
 		int inp_int;
@@ -417,6 +421,8 @@ public:
 	}
 };
 
+
+// this class can be improved by linking it directly to the input class, so as to take line and offset as input and erase or draw a character at that specific position as the input demands and only redraw when commands are used
 class Display {
 public:
 	pair<int, int> size;
@@ -436,6 +442,7 @@ public:
 		return ret;
 	}
 
+	// the update functions are very inefficient currently because they are drawing the whole box for every update
 	void update(string buffer, int line, int offset, string comments) {
 		// line 	= 1 onwards
 		// offset 	= 1 onwards
@@ -457,12 +464,13 @@ public:
 		}
 
 		for (int i = 0; i < size.second; i++) {
+			// with vertical border
 			cout << "\033[" << position.second + i << ";" << position.first - 1 << "H" << "|";
 			cout << "\033[" << position.second + i << ";" << position.first + size.first << "H" << "|";
 			cout << "\033[" << position.second + i << ";" << position.first << "H" << "\033[" << size.first << "X";
 		}
 
-		// border
+		// horizontal border
 		string horizontal = "";
 		for (int i = 0; i < size.first; i++) {
 			horizontal += "-";
@@ -475,6 +483,7 @@ public:
 		bool sad_end = false;
 		for (auto it: buffer) {
 			if (it == '\n') {
+				// cout << "\033[" << position.second + ctr << ";" << position.first << "H" << "\033[" << size.first << "X";
 				cout << "\033[" << position.second + ctr << ";" << position.first << "H" << slice(line, 0, size.first);
 				line = "";
 				ctr++;
@@ -684,7 +693,7 @@ public:
 		if (d == DEFAULT) {
 			mode = INSERT;
 
-			TextBox* insert = new TextBox(INSERT, INSERT, {150, 49}, {2, 2});
+			TextBox* insert = new TextBox(INSERT, INSERT, {150, 49}, {2, 2}); // 150 49
 			TextBox* command = new TextBox(COMMAND, INSERT, {150, 1}, {2, 52}, {{UP, false}, {DOWN, false}, {RIGHT, true}, {LEFT, true}, {REMOVE, true}, {ESC_BREAK, false}, {ENTER_REMAP, true}, {ADD, true}, {INPUT_INTERCEPT, true}}, {{INSTRUCTIONS, "Command Line"}});
 			TextBox* instructions = new TextBox(NONE, NONE, {50, 25}, {153, 2}, {{UP, false}, {DOWN, false}, {RIGHT, false}, {LEFT, false}, {REMOVE, false}, {ESC_BREAK, false}, {ENTER_REMAP, false}, {ADD, false}, {INPUT_INTERCEPT, false}}, {{INSTRUCTIONS, "Instructions\n\nDefault mode is INSERT mode.\nEsc to switch to COMMAND mode.\n\nINSERT mode allows you to edit text.\nCOMMAND mode allows you to write a command in the\n command line.\n\nAvailable commands in COMMAND mode:\n\t':q' to quit.\n\t':s target_text' to search for text.\n\t':r' to reverse text."}});
 			TextBox* result = new TextBox(NONE, NONE, {50, 24}, {153, 27}, {{UP, false}, {DOWN, false}, {RIGHT, false}, {LEFT, false}, {REMOVE, false}, {ESC_BREAK, false}, {ENTER_REMAP, false}, {ADD, false}, {INPUT_INTERCEPT, false}}, {{INSTRUCTIONS, "Result\n\n"}});
@@ -731,9 +740,11 @@ public:
 			update_mode_display(); // cursor position BUGBUGBUG
 			switch (mode) {
 			case INSERT:
+				ui[0]->update();
 				mode = ui[0]->loop(mode);
 				break;
 			case COMMAND:
+				ui[1]->update();
 				mode = ui[1]->loop(mode);
 				break;
 			case ROUTER:
